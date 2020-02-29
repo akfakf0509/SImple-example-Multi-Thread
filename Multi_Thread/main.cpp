@@ -1,14 +1,6 @@
-/*//////////////////////////////////////////
-
-
-This program is have error
-
-
-//////////////////////////////////////////*/
-
 #include <iostream>
 #include <thread>
-#include <stack>
+#include <queue>
 #include <conio.h>
 #include <Windows.h>
 
@@ -17,7 +9,7 @@ using namespace std;
 typedef enum Direction { up, down, left, right }Direction;
 typedef struct Vector2 { int x; int y; };
 
-int map[10][10] = { {1,}, };
+int map[10][10] = { {1, }, };
 Vector2 player_position = Vector2{ 0, 0 };
 Direction player_direction = Direction::up;
 
@@ -28,42 +20,50 @@ void Fire();
 int main() {	
 	char key;
 
+	CONSOLE_CURSOR_INFO cursorinfo = { 1, 0 };
+	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorinfo);
+
+	PrintMap();
 	do {
 		key = _getch();
 		MovePlayer(key);
-		if (key != ' ') {
-			system("cls");
-			PrintMap();
-		}
 	} while (key != 'q');
 }
 
 void PrintMap() {
-	for (int j = 0; j < 10; j++) {
-		for (int i = 0; i < 10; i++) {
-			switch (map[i][j]) {
-			case 0:
-				cout << "  ";
-				break;
-			case 1:
-				cout << "¡Ü";
-				break;
-			case 100:
-				cout << "¡è";
-				break;
-			case 101:
-				cout << "¡é";
-				break;
-			case 102:
-				cout << "¡ç";
-				break;
-			case 103:
-				cout << "¡æ";
-				break;
+	thread th([]() {
+		while (1) {
+			SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), { 0,0 });
+			for (int j = 0; j < 10; j++) {
+				for (int i = 0; i < 10; i++) {
+					switch (map[j][i]) {
+					case 0:
+						cout << "  ";
+						break;
+					case 1:
+						cout << "¡Ü";
+						break;
+					case 100:
+						cout << "¡è";
+						break;
+					case 101:
+						cout << "¡é";
+						break;
+					case 102:
+						cout << "¡ç";
+						break;
+					case 103:
+						cout << "¡æ";
+						break;
+					}
+				}
+				cout << endl;
 			}
+			cout << player_position.x << " " << player_position.y;
 		}
-		cout << endl;
-	}
+	});
+
+	th.detach();
 }
 
 void MovePlayer(int key) {
@@ -71,45 +71,45 @@ void MovePlayer(int key) {
 	case 'w':
 		player_direction = Direction::up;
 		if (player_position.y - 1 >= 0) {
-			map[player_position.x][player_position.y] = 0;
-			map[player_position.x][--player_position.y] = 1;
+			map[player_position.y][player_position.x] = 0;
+			map[--player_position.y][player_position.x] = 1;
 		}
 		break;
 	case 's':
 		player_direction = Direction::down;
 		if (player_position.y + 1 < 10) {
-			map[player_position.x][player_position.y] = 0;
-			map[player_position.x][++player_position.y] = 1;
+			map[player_position.y][player_position.x] = 0;
+			map[++player_position.y][player_position.x] = 1;
 		}
 		break;
 	case 'd':
 		player_direction = Direction::right;
 		if (player_position.x + 1 < 10) {
-			map[player_position.x][player_position.y] = 0;
-			map[++player_position.x][player_position.y] = 1;
+			map[player_position.y][player_position.x] = 0;
+			map[player_position.y][++player_position.x] = 1;
 		}
 		break;
 	case 'a':
 		player_direction = Direction::left;
 		if (player_position.x - 1 >= 0) {
-			map[player_position.x][player_position.y] = 0;
-			map[--player_position.x][player_position.y] = 1;
+			map[player_position.y][player_position.x] = 0;
+			map[player_position.y][--player_position.x] = 1;
 		}
 		break;
 	case ' ':
-		thread th1(Fire);
+		thread th(Fire);
 
-		th1.detach();
+		th.detach();
 		break;
 	}
 }
 
 void Fire() {
-	stack<Vector2> particle;
+	queue<Vector2> particle;
 	Vector2 point = player_position;
 	Direction direction = player_direction;
 
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 10; i++) {
 		switch (direction)
 		{
 		case Direction::up:
@@ -131,22 +131,19 @@ void Fire() {
 			}
 			break;
 		case Direction::right:
-			if (++point.y < 10) {
+			if (++point.x < 10) {
 				map[point.y][point.x] = 103;
 				particle.push(point);
 			}
 			break;
 		}
-		system("cls");
-		PrintMap();
-		Sleep(100);
+		Sleep(50);
 	}
-	Sleep(150);
+	Sleep(100);
 	while (!particle.empty()) {
-		map[particle.top().y][particle.top().x] = 0;
+		if(100 <= map[particle.front().y][particle.front().x] && map[particle.front().y][particle.front().x] <= 103)
+			map[particle.front().y][particle.front().x] = 0;
 		particle.pop();
-		system("cls");
-		PrintMap();
-		Sleep(100);
+		Sleep(50);
 	}
 }
